@@ -1,20 +1,9 @@
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export const MAX_MEMBER_NAME_LENGTH = 50;
 export const MAX_MEMBERS_PER_GROUP = 20;
 export const MAX_SLOTS_PER_MEMBER = 168; // 24h * 7 days
 
-export function isValidUUID(value: string): boolean {
-  return UUID_REGEX.test(value);
-}
-
 export function sanitizeName(name: string): string {
   return name.trim().replace(/[<>"'&]/g, "").slice(0, MAX_MEMBER_NAME_LENGTH);
-}
-
-export function isValidGroupId(id: string | null): id is string {
-  return id !== null && isValidUUID(id);
 }
 
 export function validateMemberInput(

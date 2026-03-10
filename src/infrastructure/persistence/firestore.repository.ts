@@ -63,14 +63,6 @@ export async function updateMemberAvailability(
   });
 }
 
-
-export async function updateGroupName(
-  groupId: string,
-  name: string,
-): Promise<void> {
-  await updateDoc(doc(db, COLLECTION, groupId), { name });
-}
-
 export function subscribeToGroup(
   groupId: string,
   callback: (group: AvailabilityGroup | null) => void,

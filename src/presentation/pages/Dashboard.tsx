@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useGroupStore } from "../../application/store/group.store";
 import { computeOverlap, findBestSlots } from "../../application/services/availability.service";
 import { formatHour } from "../../application/services/timezone.service";
@@ -19,33 +19,9 @@ export function Dashboard() {
     addMember,
     removeMember,
     updateMemberAvailability,
-    updateGroupName,
-    shareUrl,
   } = useGroupStore();
 
   const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState("");
-  const nameInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (group) {
-      document.title = `TimeSync — ${group.name}`;
-    }
-    return () => { document.title = "TimeSync"; };
-  }, [group?.name]);
-
-  const startEditingName = () => {
-    setNameInput(group?.name ?? "");
-    setEditingName(true);
-    setTimeout(() => nameInputRef.current?.focus(), 0);
-  };
-
-  const commitName = () => {
-    if (nameInput.trim()) updateGroupName(nameInput.trim());
-    setEditingName(false);
-  };
 
   const activeMember = group?.members.find((m) => m.id === activeMemberId) ?? null;
 
@@ -59,18 +35,12 @@ export function Dashboard() {
     [overlap, group],
   );
 
-  const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
-          <p className="text-sm text-slate-500">Loading group...</p>
+          <p className="text-sm text-slate-500">Loading...</p>
         </div>
       </div>
     );
@@ -81,42 +51,14 @@ export function Dashboard() {
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-slate-100 -mx-4 px-4 py-3 sm:static sm:bg-transparent sm:backdrop-blur-none sm:border-none sm:mx-0 sm:px-0 sm:py-0 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            TimeSync
-          </h1>
-          <p className="text-slate-500">
-            Coordinate availability across time zones for the{" "}
-            {editingName ? (
-              <input
-                ref={nameInputRef}
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                onBlur={commitName}
-                onKeyDown={(e) => { if (e.key === "Enter") commitName(); if (e.key === "Escape") setEditingName(false); }}
-                className="inline-block rounded border border-indigo-300 bg-indigo-50 px-1 py-0.5 text-base font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400"
-              />
-            ) : (
-              <span
-                className="cursor-pointer font-medium text-slate-700 underline decoration-dashed underline-offset-2 hover:text-indigo-600"
-                title="Click to edit group name"
-                onClick={startEditingName}
-              >
-                {group.name}
-              </span>
-            )}
-          </p>
-        </div>
-        <button
-          onClick={handleCopyLink}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-          {copied ? "Copied!" : "Share Link"}
-        </button>
+      <header className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          TimeSync
+        </h1>
+        <p className="text-slate-500">
+          Coordinate availability across time zones for the{" "}
+          <span className="font-medium text-slate-700">Generation Alumni Council</span>
+        </p>
       </header>
 
       {/* Add Member */}
