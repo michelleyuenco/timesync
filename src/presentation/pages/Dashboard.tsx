@@ -124,7 +124,7 @@ export function Dashboard() {
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
           Add Member
         </h2>
-        <AddMemberForm onAdd={addMember} currentMemberCount={group.members.length} />
+        <AddMemberForm onAdd={addMember} currentMemberCount={group.members.length} existingTimezones={group.members.map((m) => m.timezone)} />
       </section>
 
       {/* Members */}
@@ -207,6 +207,7 @@ export function Dashboard() {
               value={viewTimezone}
               onChange={setViewTimezone}
               label="View in timezone"
+              pinnedTimezones={group.members.map((m) => m.timezone)}
             />
           </div>
           <Legend totalMembers={group.members.length} />

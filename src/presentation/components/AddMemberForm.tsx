@@ -1,18 +1,19 @@
 import { useState } from "react";
-import { COMMON_TIMEZONES } from "../../domain/constants/timezones";
 import { detectUserTimezone } from "../../application/services/timezone.service";
 import {
   sanitizeName,
   validateMemberInput,
   MAX_MEMBER_NAME_LENGTH,
 } from "../../application/services/validation.service";
+import { TimezoneSelector } from "./TimezoneSelector";
 
 interface AddMemberFormProps {
   onAdd: (name: string, timezone: string) => void;
   currentMemberCount: number;
+  existingTimezones?: string[];
 }
 
-export function AddMemberForm({ onAdd, currentMemberCount }: AddMemberFormProps) {
+export function AddMemberForm({ onAdd, currentMemberCount, existingTimezones = [] }: AddMemberFormProps) {
   const [name, setName] = useState("");
   const [timezone, setTimezone] = useState(detectUserTimezone);
   const [error, setError] = useState<string | null>(null);
@@ -52,25 +53,16 @@ export function AddMemberForm({ onAdd, currentMemberCount }: AddMemberFormProps)
           />
         </div>
         <div className="flex flex-col gap-1 flex-1">
-          <label htmlFor="member-timezone" className="text-sm font-medium text-slate-600">
-            Timezone
-          </label>
-          <select
-            id="member-timezone"
+          <TimezoneSelector
+            label="Timezone"
             value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow-sm transition-colors hover:border-indigo-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-          >
-            {COMMON_TIMEZONES.map((tz) => (
-              <option key={tz.value} value={tz.value}>
-                {tz.label}
-              </option>
-            ))}
-          </select>
+            onChange={setTimezone}
+            pinnedTimezones={existingTimezones}
+          />
         </div>
         <button
           type="submit"
-          className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-50"
+          className="rounded-lg bg-indigo-600 px-5 py-2 text-base font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-50"
           disabled={!name.trim()}
         >
           Add Member
