@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useGroupStore } from "../../application/store/group.store";
 import { computeOverlap, findBestSlots } from "../../application/services/availability.service";
 import { formatHour } from "../../application/services/timezone.service";
@@ -19,11 +19,33 @@ export function Dashboard() {
     addMember,
     removeMember,
     updateMemberAvailability,
+    updateGroupName,
     shareUrl,
   } = useGroupStore();
 
   const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (group) {
+      document.title = `TimeSync — ${group.name}`;
+    }
+    return () => { document.title = "TimeSync"; };
+  }, [group?.name]);
+
+  const startEditingName = () => {
+    setNameInput(group?.name ?? "");
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  };
+
+  const commitName = () => {
+    if (nameInput.trim()) updateGroupName(nameInput.trim());
+    setEditingName(false);
+  };
 
   const activeMember = group?.members.find((m) => m.id === activeMemberId) ?? null;
 
@@ -59,14 +81,31 @@ export function Dashboard() {
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
       {/* Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-slate-100 -mx-4 px-4 py-3 sm:static sm:bg-transparent sm:backdrop-blur-none sm:border-none sm:mx-0 sm:px-0 sm:py-0 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
             TimeSync
           </h1>
           <p className="text-slate-500">
             Coordinate availability across time zones for the{" "}
-            <span className="font-medium text-slate-700">{group.name}</span>
+            {editingName ? (
+              <input
+                ref={nameInputRef}
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onBlur={commitName}
+                onKeyDown={(e) => { if (e.key === "Enter") commitName(); if (e.key === "Escape") setEditingName(false); }}
+                className="inline-block rounded border border-indigo-300 bg-indigo-50 px-1 py-0.5 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+            ) : (
+              <span
+                className="cursor-pointer font-medium text-slate-700 underline decoration-dashed underline-offset-2 hover:text-indigo-600"
+                title="Click to edit group name"
+                onClick={startEditingName}
+              >
+                {group.name}
+              </span>
+            )}
           </p>
         </div>
         <button
@@ -100,6 +139,19 @@ export function Dashboard() {
           onRemove={removeMember}
         />
       </section>
+
+      {/* Empty state */}
+      {group.members.length === 0 && (
+        <div className="rounded-xl border-2 border-dashed border-slate-200 p-10 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50">
+            <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-slate-600">No members yet</p>
+          <p className="mt-1 text-xs text-slate-400">Add your first member above to get started.</p>
+        </div>
+      )}
 
       {/* Individual Availability */}
       {activeMember && (

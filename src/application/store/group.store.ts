@@ -145,8 +145,12 @@ export function useGroupStore() {
 
   const updateGroupName = useCallback((name: string) => {
     const sanitized = sanitizeName(name);
+    if (!sanitized) return;
     setGroup((prev) => (prev ? { ...prev, name: sanitized } : prev));
-  }, []);
+    if (group) {
+      repo.updateGroupName(group.id, sanitized);
+    }
+  }, [group]);
 
   const shareUrl = group
     ? `${window.location.origin}${window.location.pathname}?group=${group.id}`
