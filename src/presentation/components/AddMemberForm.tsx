@@ -12,17 +12,24 @@ import { TimezoneSelector } from "./TimezoneSelector";
 const LS_NAME_KEY = "timesync:last-name";
 const LS_TZ_KEY = "timesync:last-timezone";
 
+interface ExistingMember {
+  id: string;
+  name: string;
+}
+
 interface AddMemberFormProps {
   onAdd: (name: string, timezone: string) => void;
+  onClaimIdentity: (memberId: string) => void;
   currentMemberCount: number;
-  existingNames: string[];
+  existingMembers: ExistingMember[];
   existingTimezones?: string[];
 }
 
 export function AddMemberForm({
   onAdd,
+  onClaimIdentity,
   currentMemberCount,
-  existingNames,
+  existingMembers,
   existingTimezones = [],
 }: AddMemberFormProps) {
   const [name, setName] = useState(() => localStorage.getItem(LS_NAME_KEY) ?? "");
@@ -33,7 +40,10 @@ export function AddMemberForm({
   const [nameWarning, setNameWarning] = useState<{
     type: "exact" | "similar";
     suggestedName: string;
+    matchedMembers: ExistingMember[];
   } | null>(null);
+
+  const existingNames = existingMembers.map((m) => m.name);
 
   const checkName = (value: string) => {
     const sanitized = sanitizeName(value);
@@ -43,9 +53,17 @@ export function AddMemberForm({
     }
     const conflict = findNameConflict(sanitized, existingNames);
     if (conflict) {
+      const lower = sanitized.toLowerCase();
+      const matched = existingMembers.filter((m) => {
+        const mLower = m.name.toLowerCase();
+        return conflict === "exact"
+          ? mLower === lower
+          : mLower.startsWith(lower) || lower.startsWith(mLower);
+      });
       setNameWarning({
         type: conflict,
         suggestedName: `${sanitized}-${generateNameSuffix()}`,
+        matchedMembers: matched,
       });
     } else {
       setNameWarning(null);
@@ -73,6 +91,14 @@ export function AddMemberForm({
     setName(nameWarning.suggestedName);
     setNameWarning(null);
     setError(null);
+  };
+
+  const handleClaimIdentity = (member: ExistingMember) => {
+    localStorage.setItem(LS_NAME_KEY, member.name);
+    setName("");
+    setNameWarning(null);
+    setError(null);
+    onClaimIdentity(member.id);
   };
 
   return (
@@ -120,23 +146,48 @@ export function AddMemberForm({
       </div>
 
       {nameWarning && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs" role="status">
-          <svg className="h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-          </svg>
-          <span className="text-amber-800">
-            {nameWarning.type === "exact"
-              ? "This exact name already exists in the pool."
-              : "A similar name already exists in the pool."}{" "}
-            Consider a different name, or{" "}
-          </span>
-          <button
-            type="button"
-            onClick={applySuggestion}
-            className="shrink-0 rounded bg-amber-200 px-2 py-0.5 font-medium text-amber-900 transition-colors hover:bg-amber-300"
-          >
-            use {nameWarning.suggestedName}
-          </button>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm" role="status">
+          <div className="flex items-start gap-2">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <div className="flex-1 space-y-2">
+              <p className="text-amber-800">
+                {nameWarning.type === "exact"
+                  ? "This name already exists in the pool. Is this you?"
+                  : "A similar name already exists. Is this you?"}
+              </p>
+
+              {/* Claim identity buttons for matched members */}
+              <div className="flex flex-wrap gap-2">
+                {nameWarning.matchedMembers.map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => handleClaimIdentity(member)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Yes, I'm {member.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Or add as new with variant */}
+              <div className="flex items-center gap-2 text-xs text-amber-700">
+                <span>Not you?</span>
+                <button
+                  type="button"
+                  onClick={applySuggestion}
+                  className="rounded bg-amber-200 px-2 py-0.5 font-medium text-amber-900 transition-colors hover:bg-amber-300"
+                >
+                  Add as {nameWarning.suggestedName}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

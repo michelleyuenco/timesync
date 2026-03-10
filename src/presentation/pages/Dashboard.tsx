@@ -68,8 +68,9 @@ export function Dashboard() {
         </h2>
         <AddMemberForm
           onAdd={addMember}
+          onClaimIdentity={(memberId) => setActiveMemberId(memberId)}
           currentMemberCount={group.members.length}
-          existingNames={group.members.map((m) => m.name)}
+          existingMembers={group.members.map((m) => ({ id: m.id, name: m.name }))}
           existingTimezones={group.members.map((m) => m.timezone)}
         />
       </section>
