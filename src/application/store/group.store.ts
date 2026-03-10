@@ -1,8 +1,15 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { AvailabilityGroup, Member, TimeSlot } from "../../domain/models/types";
 import { getMemberColor } from "../services/color.service";
 import { detectUserTimezone } from "../services/timezone.service";
+import {
+  isValidGroupId,
+  sanitizeName,
+  validateMemberInput,
+  MAX_SLOTS_PER_MEMBER,
+} from "../services/validation.service";
+import { debounce } from "../services/throttle.service";
 import * as repo from "../../infrastructure/persistence/firestore.repository";
 
 function createNewGroup(): AvailabilityGroup {
@@ -16,7 +23,8 @@ function createNewGroup(): AvailabilityGroup {
 
 function getGroupIdFromUrl(): string | null {
   const params = new URLSearchParams(window.location.search);
-  return params.get("group");
+  const id = params.get("group");
+  return isValidGroupId(id) ? id : null;
 }
 
 function setGroupIdInUrl(groupId: string): void {
@@ -31,18 +39,25 @@ export function useGroupStore() {
   const [viewTimezone, setViewTimezone] = useState<string>(detectUserTimezone);
   const isRemoteUpdate = useRef(false);
 
+  // Debounced availability write to Firestore (avoids flooding during drag-select)
+  const debouncedUpdateAvailability = useMemo(
+    () =>
+      debounce((groupId: string, memberId: string, availability: TimeSlot[]) => {
+        repo.updateMemberAvailability(groupId, memberId, availability);
+      }, 500),
+    [],
+  );
+
   // Initialize: load from URL or create new group
   useEffect(() => {
     const existingId = getGroupIdFromUrl();
 
     if (existingId) {
-      // Subscribe to existing group in Firestore
       const unsub = repo.subscribeToGroup(existingId, (remoteGroup) => {
         if (remoteGroup) {
           isRemoteUpdate.current = true;
           setGroup(remoteGroup);
         } else {
-          // Group not found — create fresh
           const fresh = createNewGroup();
           setGroup(fresh);
           setGroupIdInUrl(fresh.id);
@@ -52,7 +67,6 @@ export function useGroupStore() {
       });
       return unsub;
     } else {
-      // No group in URL — create new one
       const fresh = createNewGroup();
       setGroup(fresh);
       setGroupIdInUrl(fresh.id);
@@ -72,14 +86,18 @@ export function useGroupStore() {
   const addMember = useCallback(
     (name: string, timezone: string) => {
       if (!group) return;
+
+      const sanitized = sanitizeName(name);
+      const validation = validateMemberInput(sanitized, group.members.length);
+      if (!validation.valid) return;
+
       const member: Member = {
         id: uuidv4(),
-        name,
+        name: sanitized,
         timezone,
         availability: [],
         color: getMemberColor(group.members.length),
       };
-      // Optimistic local update
       setGroup((prev) =>
         prev ? { ...prev, members: [...prev.members, member] } : prev,
       );
@@ -106,27 +124,29 @@ export function useGroupStore() {
   const updateMemberAvailability = useCallback(
     (memberId: string, availability: TimeSlot[]) => {
       if (!group) return;
+
+      // Enforce slot limit
+      const clamped = availability.slice(0, MAX_SLOTS_PER_MEMBER);
+
       setGroup((prev) =>
         prev
           ? {
               ...prev,
               members: prev.members.map((m) =>
-                m.id === memberId ? { ...m, availability } : m,
+                m.id === memberId ? { ...m, availability: clamped } : m,
               ),
             }
           : prev,
       );
-      repo.updateMemberAvailability(group.id, memberId, availability);
+      debouncedUpdateAvailability(group.id, memberId, clamped);
     },
-    [group],
+    [group, debouncedUpdateAvailability],
   );
 
-  const updateGroupName = useCallback(
-    (name: string) => {
-      setGroup((prev) => (prev ? { ...prev, name } : prev));
-    },
-    [],
-  );
+  const updateGroupName = useCallback((name: string) => {
+    const sanitized = sanitizeName(name);
+    setGroup((prev) => (prev ? { ...prev, name: sanitized } : prev));
+  }, []);
 
   const shareUrl = group
     ? `${window.location.origin}${window.location.pathname}?group=${group.id}`

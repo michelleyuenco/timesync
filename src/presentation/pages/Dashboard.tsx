@@ -85,7 +85,7 @@ export function Dashboard() {
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
           Add Member
         </h2>
-        <AddMemberForm onAdd={addMember} />
+        <AddMemberForm onAdd={addMember} currentMemberCount={group.members.length} />
       </section>
 
       {/* Members */}

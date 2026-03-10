@@ -3,8 +3,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /groups/{groupId} {
-      // MVP: open read/write — add auth rules later
-      allow read, write: if true;
+      // Anyone with the group link can read
+      allow read: if true;
+
+      // Writes must include valid structure
+      allow create: if isValidGroup(request.resource.data);
+      allow update: if isValidGroup(request.resource.data)
+                    && request.resource.data.id == resource.data.id
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      // No deletes — groups are persistent
+      allow delete: if false;
+    }
+
+    // Deny access to all other collections
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
+}
+
+function isValidGroup(data) {
+  return data.keys().hasAll(['id', 'name', 'members', 'createdAt'])
+    && data.id is string
+    && data.name is string
+    && data.name.size() > 0
+    && data.name.size() <= 100
+    && data.members is list
+    && data.members.size() <= 20
+    && data.createdAt is number;
 }
