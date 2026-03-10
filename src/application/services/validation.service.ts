@@ -23,6 +23,34 @@ export function validateMemberInput(
   return { valid: true };
 }
 
+export function findNameConflict(
+  name: string,
+  existingNames: string[],
+): "exact" | "similar" | null {
+  const lower = name.toLowerCase();
+  for (const existing of existingNames) {
+    if (existing.toLowerCase() === lower) return "exact";
+  }
+  for (const existing of existingNames) {
+    if (
+      existing.toLowerCase().startsWith(lower) ||
+      lower.startsWith(existing.toLowerCase())
+    ) {
+      return "similar";
+    }
+  }
+  return null;
+}
+
+export function generateNameSuffix(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let suffix = "";
+  for (let i = 0; i < 4; i++) {
+    suffix += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return suffix;
+}
+
 export function clampSlots(
   slots: { day: string; hour: number }[],
 ): { day: string; hour: number }[] {
