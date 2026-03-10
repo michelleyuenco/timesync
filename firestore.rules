@@ -31,5 +31,6 @@ function isValidGroup(data) {
     && data.name.size() <= 100
     && data.members is list
     && data.members.size() <= 20
-    && data.createdAt is number;
+    && data.createdAt is number
+    && (!('proposedTime' in data.keys()) || data.proposedTime == null || data.proposedTime is map);
 }

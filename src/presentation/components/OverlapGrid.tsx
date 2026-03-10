@@ -1,17 +1,23 @@
-import type { Member, OverlapCell } from "../../domain/models/types";
+import type { DayOfWeek, Member, OverlapCell } from "../../domain/models/types";
 import { getWeekDates } from "../../application/services/availability.service";
 import { DAYS_OF_WEEK, DAY_LABELS, HOURS } from "../../domain/models/types";
 import { formatHour } from "../../application/services/timezone.service";
 import { getOverlapColor } from "../../application/services/color.service";
 import { useState } from "react";
 
+interface ProposedSlotMark {
+  day: DayOfWeek;
+  hour: number;
+}
+
 interface OverlapGridProps {
   overlap: OverlapCell[];
   members: Member[];
   totalMembers: number;
+  proposedSlot?: ProposedSlotMark | null;
 }
 
-export function OverlapGrid({ overlap, members, totalMembers }: OverlapGridProps) {
+export function OverlapGrid({ overlap, members, totalMembers, proposedSlot }: OverlapGridProps) {
   const [tooltip, setTooltip] = useState<{ cell: OverlapCell; x: number; y: number } | null>(null);
 
   const cellMap = new Map<string, OverlapCell>();
@@ -57,6 +63,7 @@ export function OverlapGrid({ overlap, members, totalMembers }: OverlapGridProps
             hour={hour}
             cellMap={cellMap}
             totalMembers={totalMembers}
+            proposedSlot={proposedSlot}
             onHover={(cell, x, y) => setTooltip(cell ? { cell, x, y } : null)}
           />
         ))}
@@ -95,10 +102,11 @@ interface OverlapRowProps {
   hour: number;
   cellMap: Map<string, OverlapCell>;
   totalMembers: number;
+  proposedSlot?: ProposedSlotMark | null;
   onHover: (cell: OverlapCell | null, x: number, y: number) => void;
 }
 
-function OverlapRow({ hour, cellMap, totalMembers, onHover }: OverlapRowProps) {
+function OverlapRow({ hour, cellMap, totalMembers, proposedSlot, onHover }: OverlapRowProps) {
   return (
     <>
       <div className="flex h-7 items-center justify-end pr-2 text-xs text-slate-400">
@@ -107,6 +115,7 @@ function OverlapRow({ hour, cellMap, totalMembers, onHover }: OverlapRowProps) {
       {DAYS_OF_WEEK.map((day) => {
         const cell = cellMap.get(`${day}-${hour}`);
         const count = cell?.count ?? 0;
+        const isProposed = proposedSlot?.day === day && proposedSlot?.hour === hour;
         return (
           <div
             key={`${day}-${hour}`}
@@ -114,11 +123,18 @@ function OverlapRow({ hour, cellMap, totalMembers, onHover }: OverlapRowProps) {
               cell && onHover(cell, e.nativeEvent.offsetX + (e.currentTarget as HTMLElement).offsetLeft, (e.currentTarget as HTMLElement).offsetTop)
             }
             onPointerLeave={() => onHover(null, 0, 0)}
-            className="flex h-7 items-center justify-center rounded-sm border border-slate-100 text-xs font-medium transition-colors"
+            className={`relative flex h-7 items-center justify-center rounded-sm text-xs font-medium transition-colors ${
+              isProposed
+                ? "border-2 border-violet-500 ring-1 ring-violet-300"
+                : "border border-slate-100"
+            }`}
             style={{ backgroundColor: getOverlapColor(count, totalMembers) }}
           >
             {count > 0 && (
               <span className="text-slate-700">{count}</span>
+            )}
+            {isProposed && count === 0 && (
+              <div className="h-2 w-2 rounded-full bg-violet-500" />
             )}
           </div>
         );

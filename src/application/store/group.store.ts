@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { AvailabilityGroup, Member, TimeSlot } from "../../domain/models/types";
+import type { AvailabilityGroup, Member, ProposedTime, TimeSlot } from "../../domain/models/types";
 import { getMemberColor } from "../services/color.service";
 import { detectUserTimezone } from "../services/timezone.service";
 import {
@@ -18,6 +18,7 @@ function createPool(): AvailabilityGroup {
     id: POOL_ID,
     name: "Generation Alumni Council",
     members: [],
+    proposedTime: null,
     createdAt: Date.now(),
   };
 }
@@ -105,6 +106,15 @@ export function useGroupStore() {
     [group, debouncedUpdateAvailability],
   );
 
+  const setProposedTime = useCallback(
+    (proposedTime: ProposedTime | null) => {
+      if (!group) return;
+      setGroup((prev) => (prev ? { ...prev, proposedTime } : prev));
+      repo.updateProposedTime(POOL_ID, proposedTime);
+    },
+    [group],
+  );
+
   return {
     group,
     loading,
@@ -113,5 +123,6 @@ export function useGroupStore() {
     addMember,
     removeMember,
     updateMemberAvailability,
+    setProposedTime,
   };
 }

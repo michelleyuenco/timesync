@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useGroupStore } from "../../application/store/group.store";
 import { computeOverlap, findBestSlots } from "../../application/services/availability.service";
-import { formatHour } from "../../application/services/timezone.service";
+import { formatHour, convertSlotToTimezone } from "../../application/services/timezone.service";
 import { DAY_LABELS } from "../../domain/models/types";
 import { AddMemberForm } from "../components/AddMemberForm";
 import { MemberList } from "../components/MemberList";
@@ -9,6 +9,7 @@ import { AvailabilityGrid } from "../components/AvailabilityGrid";
 import { OverlapGrid } from "../components/OverlapGrid";
 import { TimezoneSelector } from "../components/TimezoneSelector";
 import { Legend } from "../components/Legend";
+import { ProposedTimeSelector } from "../components/ProposedTimeSelector";
 
 export function Dashboard() {
   const {
@@ -19,6 +20,7 @@ export function Dashboard() {
     addMember,
     removeMember,
     updateMemberAvailability,
+    setProposedTime,
   } = useGroupStore();
 
   const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
@@ -34,6 +36,26 @@ export function Dashboard() {
     () => (group ? findBestSlots(overlap, group.members.length) : []),
     [overlap, group],
   );
+
+  // Convert proposed time to view timezone for overlap grid
+  const proposedSlotInViewTz = useMemo(() => {
+    if (!group?.proposedTime) return null;
+    return convertSlotToTimezone(
+      group.proposedTime.slot,
+      group.proposedTime.timezone,
+      viewTimezone,
+    );
+  }, [group?.proposedTime, viewTimezone]);
+
+  // Convert proposed time to active member's timezone for their grid
+  const proposedSlotInMemberTz = useMemo(() => {
+    if (!group?.proposedTime || !activeMember) return null;
+    return convertSlotToTimezone(
+      group.proposedTime.slot,
+      group.proposedTime.timezone,
+      activeMember.timezone,
+    );
+  }, [group?.proposedTime, activeMember]);
 
   if (loading) {
     return (
@@ -60,6 +82,18 @@ export function Dashboard() {
           <span className="font-medium text-slate-700">Generation Alumni Council</span>
         </p>
       </header>
+
+      {/* Proposed Time */}
+      <section className="rounded-xl border border-violet-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-violet-400">
+          Proposed Meeting Time
+        </h2>
+        <ProposedTimeSelector
+          proposedTime={group.proposedTime}
+          onSet={setProposedTime}
+          memberTimezones={group.members.map((m) => m.timezone)}
+        />
+      </section>
 
       {/* Add Member */}
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -115,14 +149,22 @@ export function Dashboard() {
                 (click &amp; drag to select)
               </span>
             </h2>
-            <span className="text-xs text-slate-400">
-              Timezone: {activeMember.timezone}
-            </span>
+            <div className="flex items-center gap-3">
+              {proposedSlotInMemberTz && (
+                <span className="text-xs text-violet-600">
+                  Proposed: {DAY_LABELS[proposedSlotInMemberTz.day]} {formatHour(proposedSlotInMemberTz.hour)}
+                </span>
+              )}
+              <span className="text-xs text-slate-400">
+                Timezone: {activeMember.timezone}
+              </span>
+            </div>
           </div>
           <AvailabilityGrid
             slots={activeMember.availability}
             memberColor={activeMember.color}
             onChange={(slots) => updateMemberAvailability(activeMember.id, slots)}
+            proposedSlot={proposedSlotInMemberTz}
           />
         </section>
       )}
@@ -158,12 +200,21 @@ export function Dashboard() {
               pinnedTimezones={group.members.map((m) => m.timezone)}
             />
           </div>
-          <Legend totalMembers={group.members.length} />
-          <div className="mt-3">
+          <div className="mb-3 flex items-center gap-4">
+            <Legend totalMembers={group.members.length} />
+            {proposedSlotInViewTz && (
+              <div className="flex items-center gap-1.5 text-xs text-violet-600">
+                <div className="h-3 w-3 rounded-sm border-2 border-violet-500" />
+                <span>Proposed</span>
+              </div>
+            )}
+          </div>
+          <div>
             <OverlapGrid
               overlap={overlap}
               members={group.members}
               totalMembers={group.members.length}
+              proposedSlot={proposedSlotInViewTz}
             />
           </div>
         </section>

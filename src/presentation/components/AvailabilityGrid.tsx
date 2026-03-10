@@ -4,13 +4,19 @@ import { DAYS_OF_WEEK, DAY_LABELS, HOURS } from "../../domain/models/types";
 import { isSlotSelected, getWeekDates } from "../../application/services/availability.service";
 import { formatHour } from "../../application/services/timezone.service";
 
+interface ProposedSlotMark {
+  day: DayOfWeek;
+  hour: number;
+}
+
 interface AvailabilityGridProps {
   slots: TimeSlot[];
   memberColor: string;
   onChange: (slots: TimeSlot[]) => void;
+  proposedSlot?: ProposedSlotMark | null;
 }
 
-export function AvailabilityGrid({ slots, memberColor, onChange }: AvailabilityGridProps) {
+export function AvailabilityGrid({ slots, memberColor, onChange, proposedSlot }: AvailabilityGridProps) {
   const [isDragging, setIsDragging] = useState(false);
   const dragModeRef = useRef<"add" | "remove">("add");
 
@@ -86,6 +92,7 @@ export function AvailabilityGrid({ slots, memberColor, onChange }: AvailabilityG
             hour={hour}
             slots={slots}
             memberColor={memberColor}
+            proposedSlot={proposedSlot}
             onPointerDown={handlePointerDown}
             onPointerEnter={handlePointerEnter}
           />
@@ -99,6 +106,7 @@ interface AvailabilityRowProps {
   hour: number;
   slots: TimeSlot[];
   memberColor: string;
+  proposedSlot?: ProposedSlotMark | null;
   onPointerDown: (day: DayOfWeek, hour: number) => void;
   onPointerEnter: (day: DayOfWeek, hour: number) => void;
 }
@@ -107,6 +115,7 @@ function AvailabilityRow({
   hour,
   slots,
   memberColor,
+  proposedSlot,
   onPointerDown,
   onPointerEnter,
 }: AvailabilityRowProps) {
@@ -117,22 +126,31 @@ function AvailabilityRow({
       </div>
       {DAYS_OF_WEEK.map((day) => {
         const selected = isSlotSelected(slots, day, hour);
+        const isProposed = proposedSlot?.day === day && proposedSlot?.hour === hour;
         return (
           <div
             key={`${day}-${hour}`}
             onPointerDown={() => onPointerDown(day, hour)}
             onPointerEnter={() => onPointerEnter(day, hour)}
-            className={`h-7 cursor-pointer rounded-sm border transition-colors ${
+            className={`relative h-7 cursor-pointer rounded-sm border transition-colors ${
               selected
                 ? "border-transparent"
-                : "border-slate-100 bg-white hover:bg-slate-50"
+                : isProposed
+                  ? "border-violet-400 bg-violet-50"
+                  : "border-slate-100 bg-white hover:bg-slate-50"
             }`}
             style={
               selected
                 ? { backgroundColor: memberColor, opacity: 0.7 }
                 : undefined
             }
-          />
+          >
+            {isProposed && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className={`h-2 w-2 rounded-full ${selected ? "bg-white" : "bg-violet-500"} ring-2 ${selected ? "ring-white/50" : "ring-violet-300"}`} />
+              </div>
+            )}
+          </div>
         );
       })}
     </>

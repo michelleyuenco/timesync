@@ -11,10 +11,17 @@ export interface Member {
   color: string;
 }
 
+export interface ProposedTime {
+  slot: TimeSlot;
+  timezone: string;
+  proposedBy: string; // member name
+}
+
 export interface AvailabilityGroup {
   id: string;
   name: string;
   members: Member[];
+  proposedTime: ProposedTime | null;
   createdAt: number;
 }
 

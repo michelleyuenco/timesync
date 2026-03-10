@@ -9,7 +9,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
-import type { AvailabilityGroup, Member, TimeSlot } from "../../domain/models/types";
+import type { AvailabilityGroup, Member, ProposedTime, TimeSlot } from "../../domain/models/types";
 
 const COLLECTION = "groups";
 
@@ -18,6 +18,7 @@ export async function createGroup(group: AvailabilityGroup): Promise<void> {
     id: group.id,
     name: group.name,
     members: group.members,
+    proposedTime: group.proposedTime ?? null,
     createdAt: group.createdAt,
   });
 }
@@ -61,6 +62,13 @@ export async function updateMemberAvailability(
   await updateDoc(doc(db, COLLECTION, groupId), {
     members: updatedMembers,
   });
+}
+
+export async function updateProposedTime(
+  groupId: string,
+  proposedTime: ProposedTime | null,
+): Promise<void> {
+  await updateDoc(doc(db, COLLECTION, groupId), { proposedTime });
 }
 
 export function subscribeToGroup(
