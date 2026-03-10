@@ -1,4 +1,5 @@
 import type { Member, OverlapCell } from "../../domain/models/types";
+import { getWeekDates } from "../../application/services/availability.service";
 import { DAYS_OF_WEEK, DAY_LABELS, HOURS } from "../../domain/models/types";
 import { formatHour } from "../../application/services/timezone.service";
 import { getOverlapColor } from "../../application/services/color.service";
@@ -27,15 +28,27 @@ export function OverlapGrid({ overlap, members, totalMembers }: OverlapGridProps
         }}
       >
         {/* Header */}
-        <div className="h-8" />
-        {DAYS_OF_WEEK.map((day) => (
-          <div
-            key={day}
-            className="flex h-8 items-center justify-center text-xs font-semibold text-slate-500 uppercase"
-          >
-            {DAY_LABELS[day]}
-          </div>
-        ))}
+        {(() => {
+          const weekDates = getWeekDates();
+          return (
+            <>
+              <div className="h-14" />
+              {DAYS_OF_WEEK.map((day, i) => (
+                <div
+                  key={day}
+                  className="flex h-14 flex-col items-center justify-center gap-0.5"
+                >
+                  <span className="text-[10px] font-bold text-indigo-500">
+                    {weekDates[i]}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500 uppercase">
+                    {DAY_LABELS[day]}
+                  </span>
+                </div>
+              ))}
+            </>
+          );
+        })()}
 
         {/* Rows */}
         {HOURS.map((hour) => (

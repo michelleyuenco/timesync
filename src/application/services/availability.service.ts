@@ -75,3 +75,22 @@ export function toggleSlot(
   }
   return [...slots, { day, hour }];
 }
+
+/**
+ * Returns an array of 7 formatted date strings for the current week (Mon–Sun),
+ * e.g. ["10 Mar", "11 Mar", ..., "16 Mar"]
+ */
+export function getWeekDates(): string[] {
+  const today = new Date();
+  // Find Monday of the current week
+  const dayOfWeek = today.getDay(); // 0 = Sun, 1 = Mon, ...
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diffToMonday);
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  });
+}

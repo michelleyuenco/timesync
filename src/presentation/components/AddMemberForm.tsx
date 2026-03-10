@@ -7,6 +7,9 @@ import {
 } from "../../application/services/validation.service";
 import { TimezoneSelector } from "./TimezoneSelector";
 
+const LS_NAME_KEY = "timesync:last-name";
+const LS_TZ_KEY = "timesync:last-timezone";
+
 interface AddMemberFormProps {
   onAdd: (name: string, timezone: string) => void;
   currentMemberCount: number;
@@ -14,8 +17,10 @@ interface AddMemberFormProps {
 }
 
 export function AddMemberForm({ onAdd, currentMemberCount, existingTimezones = [] }: AddMemberFormProps) {
-  const [name, setName] = useState("");
-  const [timezone, setTimezone] = useState(detectUserTimezone);
+  const [name, setName] = useState(() => localStorage.getItem(LS_NAME_KEY) ?? "");
+  const [timezone, setTimezone] = useState(
+    () => localStorage.getItem(LS_TZ_KEY) ?? detectUserTimezone()
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -26,6 +31,9 @@ export function AddMemberForm({ onAdd, currentMemberCount, existingTimezones = [
       setError(validation.error ?? "Invalid input");
       return;
     }
+    // Persist to localStorage
+    localStorage.setItem(LS_NAME_KEY, sanitized);
+    localStorage.setItem(LS_TZ_KEY, timezone);
     setError(null);
     onAdd(sanitized, timezone);
     setName("");
@@ -37,6 +45,9 @@ export function AddMemberForm({ onAdd, currentMemberCount, existingTimezones = [
         <div className="flex flex-col gap-1 flex-1">
           <label htmlFor="member-name" className="text-sm font-medium text-slate-600">
             Name
+            {localStorage.getItem(LS_NAME_KEY) && (
+              <span className="ml-2 text-xs font-normal text-indigo-400">✓ remembered</span>
+            )}
           </label>
           <input
             id="member-name"
@@ -56,7 +67,9 @@ export function AddMemberForm({ onAdd, currentMemberCount, existingTimezones = [
           <TimezoneSelector
             label="Timezone"
             value={timezone}
-            onChange={setTimezone}
+            onChange={(tz) => {
+              setTimezone(tz);
+            }}
             pinnedTimezones={existingTimezones}
           />
         </div>
