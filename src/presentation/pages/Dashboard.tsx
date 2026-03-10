@@ -95,7 +95,7 @@ export function Dashboard() {
                 onChange={(e) => setNameInput(e.target.value)}
                 onBlur={commitName}
                 onKeyDown={(e) => { if (e.key === "Enter") commitName(); if (e.key === "Escape") setEditingName(false); }}
-                className="inline-block rounded border border-indigo-300 bg-indigo-50 px-1 py-0.5 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400"
+                className="inline-block rounded border border-indigo-300 bg-indigo-50 px-1 py-0.5 text-base font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400"
               />
             ) : (
               <span

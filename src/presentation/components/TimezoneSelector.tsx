@@ -15,7 +15,7 @@ export function TimezoneSelector({ value, onChange, label }: TimezoneSelectorPro
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors hover:border-indigo-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow-sm transition-colors hover:border-indigo-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
       >
         {COMMON_TIMEZONES.map((tz) => (
           <option key={tz.value} value={tz.value}>
